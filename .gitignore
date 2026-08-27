@@ -1,0 +1,14 @@
+# The three service repos are checked out inside this one but version
+# themselves — never commit them here.
+/vdownloader_worker/
+/vdownloader_telegram/
+/vdownloader_web/
+
+# Secrets / local
+.env
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
