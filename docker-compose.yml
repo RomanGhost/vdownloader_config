@@ -1,12 +1,12 @@
 services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # management UI (guest/guest)
+    # ports:
+    #   - "5672:5672"    # AMQP
+    #   - "15672:15672"  # management UI
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-guest}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -17,11 +17,10 @@ services:
     restart: unless-stopped
 
   worker:
-    build: ./vdownloader_worker
+    image: ghcr.io/romanghost/vdownloader_worker:${WORKER_TAG:-latest}
     command: ["./downloader", "-worker"]
-    env_file: ./vdownloader_worker/.env
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - OUT_DIR=/downloads
       - FILE_SERVER_ADDR=:8080
     ports:
@@ -34,11 +33,11 @@ services:
     restart: unless-stopped
 
   telegram:
-    build: ./vdownloader_telegram
-    env_file: ./vdownloader_telegram/.env
+    image: ghcr.io/romanghost/vdownloader_telegram:${TELEGRAM_TAG:-latest}
     environment:
+      - BOT_TOKEN=${BOT_TOKEN}
       - WORKER_URL=http://worker:8080
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -47,11 +46,11 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./vdownloader_web
+    image: ghcr.io/romanghost/vdownloader_web:${WEB_TAG:-latest}
     environment:
       - WORKER_URL=http://worker:8080
       - HTTP_ADDR=:8082
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
     ports:
       - "8082:8082"
     depends_on:
